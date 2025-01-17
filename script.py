@@ -1,16 +1,44 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+from scapy.all import ARP, Ether, srp
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def scan_network(ip_range):
+    """
+    Scanează rețeaua pentru dispozitive active.
+
+    Args:
+        ip_range (str): Intervalul de adrese IP, ex: "192.168.1.0/24".
+
+    Returns:
+        list: O listă cu IP-urile dispozitivelor active.
+    """
+    # Creăm un pachet ARP pentru a identifica dispozitivele din rețea
+    arp_request = ARP(pdst=ip_range)
+    ether = Ether(dst="ff:ff:ff:ff:ff:ff")
+    packet = ether / arp_request
+
+    # Trimitem pachetul și primim răspunsurile
+    result = srp(packet, timeout=2, verbose=0)[0]
+
+    # Extragem IP-urile dispozitivelor active
+    devices = []
+    for sent, received in result:
+        devices.append({'ip': received.psrc, 'mac': received.hwsrc})
+
+    return devices
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+if __name__ == "__main__":
+    # Setează intervalul de scanare, de exemplu "192.168.1.0/24"
+    ip_range = input("Introdu intervalul IP al VLAN-ului (ex: 192.168.1.0/24): ")
+    print(f"Scanare în curs pentru {ip_range}...")
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    # Scanează rețeaua
+    active_devices = scan_network(ip_range)
+
+    # Afișează rezultatele
+    if active_devices:
+        print("\nDispozitive active găsite:")
+        for device in active_devices:
+            print(f"IP: {device['ip']}, MAC: {device['mac']}")
+    else:
+        print("\nNu au fost găsite dispozitive active.")
